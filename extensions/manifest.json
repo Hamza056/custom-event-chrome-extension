@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "my Extension",
   "description": "The CreataChain Wallet is a safe place to keep your cryptocurrency.",
-  "version": "1.7.0",
+  "version": "2.17.10",
   "permissions": ["storage", "unlimitedStorage"],
   "host_permissions": ["<all_urls>"],
 
@@ -10,7 +10,11 @@
     "default_popup": "./dist/index.html",
     "default_title": "Creatachain"
   },
-
+  "icons": {
+    "16": "photographer.png",
+    "48": "photographer.png",
+    "128": "photographer.png"
+  },
   "background": {
     "service_worker": "background.js"
   },

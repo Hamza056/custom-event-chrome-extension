@@ -17,5 +17,7 @@
     "incremental": true
   },
   "exclude": ["node_modules", ".next", "out"],
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js"],
+  "no-unused-vars": "off",
+  "@typescript-eslint/no-unused-vars": ["error"]
 }

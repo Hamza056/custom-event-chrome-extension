@@ -4,7 +4,9 @@ module.exports = {
   swcMinify: true,
   assetPrefix: "./",
   pageExtensions: ["page.tsx", "page.ts"],
-
+  images: {
+    unoptimized: true, // Disable image optimization for static export
+  },
   webpack: (config, { isServer }) => {
     config.experiments = {
       asyncWebAssembly: true,

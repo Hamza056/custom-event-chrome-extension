@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Layout } from "src/layout";
 
-// chrome APIを使用するためdynamic importし、browser側でのみ読み込まれるようにする
 // const Buttond = dynamic(
 //   async () => {
 //     const module = await import("src/components/Button");
@@ -18,66 +17,76 @@ import { Layout } from "src/layout";
 //     },
 //   },
 // );
-const handleSendMessageToBackground = () => {
-  chrome.runtime.sendMessage(
-    { type: "FORWARD_TO_CONTENT", data: "Hello from popup" },
-    (response) => {
-      // eslint-disable-next-line
-      console.log("Response from content script:", response);
-    },
-  );
-};
+
 // eslint-disable-next-line
 
 const IndexPage: CustomNextPage = () => {
   // eslint-disable-next-line
-  const [message, setMessage] = useState();
+  const [message, setMessage] = useState<ResponseType | undefined>(undefined);
+  type ResponseType = {
+    data?: string; // Replace `string` with the actual type of data
+    status?: string;
+  };
 
-  // popup.js
-  useEffect(() => {
-    // Add the message listener
+  const [res, setres] = useState<ResponseType | undefined>(undefined);
+  const handleSendMessageToBackground = async () => {
+    // Create a delay function that returns a Promise
     // eslint-disable-next-line
     //@ts-ignore
-    const messageListener = (request, sender, sendResponse) => {
-      if (request.message) {
-        // eslint-disable-next-line
-        console.log("Message received in popup:", request, sender, sendResponse);
-        setMessage(request.message); // Update state with the received message
-      }
-
-      // Optionally, send a response back
-      sendResponse({ received: true });
+    const delay = (ms) => {
+      return new Promise((resolve) => {
+        return setTimeout(resolve, ms);
+      });
     };
 
-    // Register the listener
-    chrome.runtime.onMessage.addListener(messageListener);
+    // Wait for the delay to finish
+    await delay(800); // Delay in milliseconds (e.g., 1000ms = 1 second)
 
-    // Cleanup the listener on component unmount
-    return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
-    };
-  }, []); // Empty dependency array ensures this runs once on mount
+    // Send the message to the background script
+    chrome.runtime.sendMessage({ type: "FORWARD_TO_CONTENT", data: message?.data }, (response) => {
+      // Log the response from the content script
+      // eslint-disable-next-line
+      console.log("Response from content script:", response);
+      setres(response);
+    });
+  };
+
   useEffect(() => {
     // Listen for custom events from the content script
+    // eslint-disable-next-line
+    console.log("running");
+
     // eslint-disable-next-line
     //@ts-ignore
     // eslint-disable-next-line
     const handleMyExtensionResponse = (request, sender, sendResponse) => {
       // eslint-disable-next-line
       console.log("Message received in popup:", request.message);
-      setMessage(request.message); // Update state with the received message
+      if (!request.message.method) {
+        chrome.runtime.sendMessage(
+          { type: "FORWARD_TO_CONTENT", data: request.message },
+          (response) => {
+            // Log the response from the content script
+            // eslint-disable-next-line
+            console.log("Response from content script:", response);
+            setMessage(response);
+          },
+        );
+      }
     };
     // eslint-disable-next-line
-    console.log(chrome.runtime.onMessage.addListener(handleMyExtensionResponse), "sdsdds");
+    console.log(chrome.runtime.onMessage?.addListener(handleMyExtensionResponse));
 
     // Cleanup event listener on component unmount
     return () => {
       // eslint-disable-next-line
       //@ts-ignore
       // eslint-disable-next-line
-      window.removeEventListener(handleMyExtensionResponse);
+      window?.removeEventListener(handleMyExtensionResponse);
     };
   }, []);
+  // eslint-disable-next-line
+  console.log(res, "rrrr");
 
   return (
     <Box
@@ -101,7 +110,9 @@ const IndexPage: CustomNextPage = () => {
       <Button variant="contained" onClick={handleSendMessageToBackground}>
         Send Message to Background
       </Button>
-      <div id="messageDisplay">{message}</div>
+      <div id="messageDisplay">{message?.data}</div>
+      <div>{res?.status}</div>
+      <div>{res?.data}</div>
       <Box>
         <Link href="/sample">
           <a className="text-white underline">to sample page</a>
