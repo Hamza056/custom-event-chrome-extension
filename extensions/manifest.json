@@ -3,7 +3,7 @@
   "name": "my Extension",
   "description": "The CreataChain Wallet is a safe place to keep your cryptocurrency.",
   "version": "2.17.10",
-  "permissions": ["storage", "unlimitedStorage"],
+  "permissions": ["windows", "tabs", "activeTab", "background", "storage"],
   "host_permissions": ["<all_urls>"],
 
   "action": {
