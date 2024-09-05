@@ -10,11 +10,12 @@ interface Request {
   data?: any;
 }
 
-// Track the popup window ID
+// Track the popup window ID and its state
 let popupWindowId: number | null = null;
+let isPopupOpen = false;
 
 // Function to handle different operations
-// eslint-disable-next-line
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 //@ts-ignore
 const handleRequest = async (request: Request): Promise<{ result?: number | string }> => {
   const { method, params } = request.message;
@@ -42,13 +43,14 @@ const handleRequest = async (request: Request): Promise<{ result?: number | stri
   } else {
     result = `${request.message}`;
   }
+
   console.log(result);
 };
 
 // Function to open the popup window if it's not already open
 const openPopup = (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (popupWindowId === null) {
+    if (!isPopupOpen) {
       chrome.windows.create(
         {
           url: chrome.runtime.getURL("./dist/index.html"),
@@ -62,12 +64,14 @@ const openPopup = (): Promise<void> => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             //@ts-ignore
             popupWindowId = popupWindow.id; // Save the popup window ID
+            isPopupOpen = true; // Update the state
 
             // Listen for the window being closed
             chrome.windows.onRemoved.addListener((windowId) => {
               if (windowId === popupWindowId) {
-                console.log("Popup window closed, resetting popupWindowId.");
+                console.log("Popup window closed, resetting popupWindowId and state.");
                 popupWindowId = null; // Reset when the window is closed
+                isPopupOpen = false; // Update the state
               }
             });
             resolve(); // Resolve once popup is opened
@@ -100,20 +104,21 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) =>
   } else {
     handleRequest(request)
       .then(async (response) => {
-        // Open the popup first
-        console.log(response, "ssdsd");
+        console.log("Request handled. Popup status:", isPopupOpen);
 
-        openPopup();
+        // Ensure popup is opened before sending the response
+        await openPopup();
 
-        await setTimeout(() => {
-          sendResponse(response);
-        }, 2000); // 2-second delay
+        // Send the response after opening the popup
+        sendResponse(response);
       })
       .catch((error) => {
         console.error("Error handling request:", error);
         sendResponse({ error: error.message });
       });
-    return true; // Indicate asynchronous response
+
+    // Indicate asynchronous response
+    return true;
   }
 });
 
