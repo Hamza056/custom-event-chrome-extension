@@ -15,8 +15,6 @@ let popupWindowId: number | null = null;
 let isPopupOpen = false;
 
 // Function to handle different operations
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
 const handleRequest = async (request: Request): Promise<{ result?: number | string }> => {
   const { method, params } = request.message;
 
@@ -44,7 +42,9 @@ const handleRequest = async (request: Request): Promise<{ result?: number | stri
     result = `${request.message}`;
   }
 
-  console.log(result);
+  await chrome.storage.local.set({ result });
+
+  return { result };
 };
 
 // Function to open the popup window if it's not already open
@@ -91,20 +91,43 @@ const openPopup = (): Promise<void> => {
 chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) => {
   const { type, data } = request;
 
-  if (type === "FORWARD_TO_CONTENT") {
-    // Forward the message to the content script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        setTimeout(() => {
-          chrome.tabs.sendMessage(tabs[0].id!, { type: "FROM_POPUP", data }, sendResponse);
-        }, 2000); // 2-second delay
-      }
+  // Common function to send a message to all active tabs
+  const forwardToAllTabs = (messageType: string) => {
+    chrome.tabs.query({}, (tabs) => {
+      let pendingResponses = tabs.length;
+
+      tabs.forEach((tab) => {
+        if (tab?.id) {
+          chrome.tabs.sendMessage(tab.id, { type: messageType, data }, (response) => {
+            console.log(response, "dsds");
+
+            // Once all responses are collected, send them back
+            if (--pendingResponses === 0) {
+              sendResponse(response);
+            }
+          });
+        }
+      });
     });
     return true; // Indicate asynchronous response
+  };
+
+  if (type === "FORWARD_TO_CONTENT") {
+    setTimeout(() => {
+      forwardToAllTabs("FROM_POPUP");
+    }, 2000); // 2-second delay
+    return true;
+  }
+
+  if (type === "FORWARD_TO_CONTENTdd") {
+    setTimeout(() => {
+      forwardToAllTabs("FROM_POPUPd");
+    }, 2000); // 2-second delay
+    return true;
   } else {
     handleRequest(request)
       .then(async (response) => {
-        console.log("Request handled. Popup status:", isPopupOpen);
+        console.log("Request handled. Popup status:", isPopupOpen, request, response);
 
         // Ensure popup is opened before sending the response
         await openPopup();
@@ -117,8 +140,7 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) =>
         sendResponse({ error: error.message });
       });
 
-    // Indicate asynchronous response
-    return true;
+    return true; // Indicate asynchronous response
   }
 });
 

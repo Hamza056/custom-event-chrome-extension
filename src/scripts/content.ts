@@ -1,53 +1,56 @@
-// Log for debugging purposes
+// content.js
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+//@ts-nocheck
 console.log("Content script loaded");
 
-// If you want to get the DOM of the open page, you can do it here
-// document.querySelector("#some-id");
-
-// Inject a script into the page to define `window.myExtension`
+// Inject the `inject.js` script into the page to define `window.myExtension`
 const script = document.createElement("script");
 script.src = chrome.runtime.getURL("inject.js");
 document.documentElement.appendChild(script);
 
-// Listen for messages from the web page
-// eslint-disable-next-line
-//@ts-ignore
-window.addEventListener("myExtensionMessage", async (event: CustomEvent) => {
-  try {
-    console.log(event);
+// Function to send a message to the background script and return the response
+const sendMessageToBackground = async (message) => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: "FROM_CONTENT", message }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        console.log("Response from background script:", response);
+        resolve(response);
+      }
+    });
+  });
+};
 
-    const sendMessageToBackground = async (message: any): Promise<any> => {
-      return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage({ message }, (response) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-          } else {
-            console.log(response);
-            resolve(response);
-          }
-        });
-      });
-    };
+// Listen for messages from the web page
+window.addEventListener("myExtensionMessage", async (event) => {
+  try {
+    console.log("Message from web page:", event.detail);
 
     const response = await sendMessageToBackground(event.detail);
     console.log("Response from background script:", response);
+
+    // Dispatch the response back to the web page
+    window.dispatchEvent(new CustomEvent("myExtensionResponse", { detail: response }));
   } catch (error) {
     console.error("Error sending message to background script:", error);
   }
 });
 
-// Send messages to the web page
+// Handle messages from the background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "FROM_POPUP" || request.type === "FROM_POPUPd") {
+    console.log(`Message from popup via background script (${request.type}):`, request.data);
 
-// Log received messages for debugging
+    // Dispatch the message to the web page
+    window.dispatchEvent(
+      new CustomEvent("myExtensionResponse", {
+        detail: { status: "Received by content script", data: request.data },
+      }),
+    );
 
-// Handle messages from popup via background script
-chrome.runtime.onMessage.addListener(
-  (request: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => {
-    if (request.type === "FROM_POPUP") {
-      console.log("Message from popup via background script:", request.data);
-      sendResponse({ status: "Received by content script", data: request.data });
-    }
-  },
-);
-
+    sendResponse({ status: "Received by content script", data: request.data });
+  }
+  return true; // Important to indicate an async response
+});
 export {};

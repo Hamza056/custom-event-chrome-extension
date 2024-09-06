@@ -17,8 +17,10 @@ export const Header: React.VFC = () => {
     // eslint-disable-next-line
     //@ts-ignore
     // eslint-disable-next-line
-    chrome?.tabs?.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome?.tabs?.query({}, function (tabs) {
       setExternalTab(tabs && tabs[0]);
+      console.log(tabs, "fhhgf");
+
       // eslint-disable-next-line
       //@ts-ignore
       // eslint-disable-next-line
