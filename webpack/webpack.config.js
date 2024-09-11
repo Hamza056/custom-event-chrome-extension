@@ -4,8 +4,9 @@ module.exports = {
   entry: {
     content: "./src/scripts/content.ts",
     background: "./src/scripts/background.ts",
+    inject: "./src/scripts/inject.ts",
   },
-  // background.jsがmanifest.jsonと同階層にいなければならないため、出力先をmanifestと同階層に指定
+
   output: {
     path: path.resolve(__dirname, "../extensions"),
     filename: "[name].js",
