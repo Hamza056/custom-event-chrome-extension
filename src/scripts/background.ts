@@ -112,13 +112,6 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) =>
     return true; // Indicate asynchronous response
   };
 
-  if (type === "FORWARD_TO_CONTENT") {
-    setTimeout(() => {
-      forwardToAllTabs("FROM_POPUP");
-    }, 2000); // 2-second delay
-    return true;
-  }
-
   if (type === "FORWARD_TO_CONTENTdd") {
     setTimeout(() => {
       forwardToAllTabs("FROM_POPUPd");
@@ -131,9 +124,6 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse) =>
 
         // Ensure popup is opened before sending the response
         await openPopup();
-
-        // Send the response after opening the popup
-        sendResponse(response);
       })
       .catch((error) => {
         console.error("Error handling request:", error);
